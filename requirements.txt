@@ -2,3 +2,4 @@ streamlit
 transformers
 pdfplumber
 tensorflow
+tf-keras

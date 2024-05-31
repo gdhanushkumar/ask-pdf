@@ -1,23 +1,37 @@
 import streamlit as st
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
 import pdfplumber
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 # Load pre-trained model for question answering
-qa_model = pipeline("question-answering", model="bert-large-uncased-whole-word-masking-finetuned-squad")
+logging.info("Loading model and tokenizer")
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
+model = AutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
+qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_path):
-    with pdfplumber.open(pdf_path) as pdf_file:
-        text = ""
-        for page in pdf_file.pages:
-            text += page.extract_text()
-    return text
+    try:
+        with pdfplumber.open(pdf_path) as pdf_file:
+            text = ""
+            for page in pdf_file.pages:
+                text += page.extract_text()
+        return text
+    except Exception as e:
+        logging.error("Error extracting text from PDF: %s", e)
+        return None
 
 # Function to answer user questions
-def answer_question(pdf_path, question):
-    text = extract_text_from_pdf(pdf_path)
-    answer = qa_model(question=question, context=text)
-    return answer['answer']
+def answer_question(text, question):
+    try:
+        answer = qa_pipeline(question=question, context=text)
+        return answer['answer']
+    except Exception as e:
+        logging.error("Error answering question: %s", e)
+        return None
 
 def main():
     st.title("PDF Question Answering")
@@ -35,8 +49,15 @@ def main():
                 st.warning("Please ask a question.")
             else:
                 try:
-                    answer = answer_question(uploaded_file, question)
-                    st.success("Answer: " + answer)
+                    text = extract_text_from_pdf(uploaded_file)
+                    if text is None:
+                        st.error("Failed to extract text from PDF.")
+                    else:
+                        answer = answer_question(text, question)
+                        if answer is None:
+                            st.error("Failed to get an answer.")
+                        else:
+                            st.success("Answer: " + answer)
                 except Exception as e:
                     st.error("An error occurred: {}".format(str(e)))
 

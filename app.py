@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import pipeline, TFAutoModelForQuestionAnswering, AutoTokenizer
 import pdfplumber
 import logging
 
@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 # Load pre-trained model for question answering
 logging.info("Loading model and tokenizer")
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
-model = AutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
+model = TFAutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
 qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer)
 
 # Function to extract text from PDF
